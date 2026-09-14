@@ -1,0 +1,39 @@
+# Render Blueprint for the COD OTP backend.
+# In Render: New + > Blueprint > connect this repo. Render reads this file.
+#
+# After the service is created, set the secret env vars in the Render dashboard
+# (Environment tab). They are intentionally NOT committed here.
+
+services:
+  - type: web
+    name: aldo-cod-otp
+    runtime: node
+    plan: free
+    # Build/start run from the repo root (this backend is the repo root).
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # --- SMS provider (Synapse). Set real values in the dashboard. ---
+      - key: SYNAPSE_SMS_URL
+        value: http://api.me.synapselive.com/v1/multichannel/messages/sendsms
+      - key: SYNAPSE_USERNAME
+        sync: false
+      - key: SYNAPSE_PASSWORD
+        sync: false
+      - key: SYNAPSE_SENDER_ID
+        sync: false
+      # --- OTP policy (optional overrides) ---
+      - key: OTP_LENGTH
+        value: "6"
+      - key: OTP_TTL_SECONDS
+        value: "300"
+      - key: OTP_RESEND_COOLDOWN_SECONDS
+        value: "60"
+      - key: OTP_MAX_SENDS_PER_HOUR
+        value: "5"
+      - key: OTP_MAX_VERIFY_ATTEMPTS
+        value: "5"
+      - key: SMS_REQUEST_TIMEOUT_MS
+        value: "10000"
