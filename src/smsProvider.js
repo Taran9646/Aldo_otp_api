@@ -42,14 +42,20 @@ export async function sendOtpSms(apiPhone, otp) {
       signal: controller.signal,
     });
 
+    const rawText = await response.text();
+
     if (!response.ok) {
-      return { ok: false, reason: `provider_status_${response.status}` };
+      return {
+        ok: false,
+        reason: `provider_status_${response.status}`,
+        detail: rawText.slice(0, 300),
+      };
     }
 
     // Synapse returns JSON like: { "result": "<txnId>", "status": "SUCCESS" }.
     let body = null;
     try {
-      body = await response.json();
+      body = JSON.parse(rawText);
     } catch {
       body = null;
     }
@@ -57,14 +63,18 @@ export async function sendOtpSms(apiPhone, otp) {
     if (body && typeof body === "object" && "status" in body) {
       const status = String(body.status).toUpperCase();
       if (status !== "SUCCESS") {
-        return { ok: false, reason: "provider_error" };
+        return {
+          ok: false,
+          reason: "provider_error",
+          detail: rawText.slice(0, 300),
+        };
       }
       // Accepted by the gateway. `body.result` is the provider transaction ID.
       return { ok: true, reference: body.result };
     }
 
     // Fallback: no recognizable status field but HTTP was 2xx.
-    return { ok: true };
+    return { ok: true, detail: rawText.slice(0, 300) };
   } catch (err) {
     if (err?.name === "AbortError") {
       return { ok: false, reason: "timeout" };

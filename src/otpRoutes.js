@@ -68,6 +68,9 @@ otpRouter.post("/send", async (req, res) => {
     return res.status(502).json({
       ok: false,
       message: SEND_ERROR_MESSAGES[result.reason] ?? "Failed to send the code.",
+      // Temporary diagnostic to identify provider issues in production.
+      debugReason: result.reason,
+      debugDetail: result.detail,
     });
   }
 
