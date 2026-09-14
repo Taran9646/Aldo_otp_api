@@ -46,8 +46,7 @@ export async function sendOtpSms(apiPhone, otp) {
       return { ok: false, reason: `provider_status_${response.status}` };
     }
 
-    // Some providers return non-JSON bodies; treat a 2xx as success but guard
-    // against explicit error flags when JSON is present.
+    // Synapse returns JSON like: { "result": "<txnId>", "status": "SUCCESS" }.
     let body = null;
     try {
       body = await response.json();
@@ -55,16 +54,16 @@ export async function sendOtpSms(apiPhone, otp) {
       body = null;
     }
 
-    if (body && typeof body === "object") {
-      const errorFlag =
-        body.error === true ||
-        body.status === "error" ||
-        body.success === false;
-      if (errorFlag) {
+    if (body && typeof body === "object" && "status" in body) {
+      const status = String(body.status).toUpperCase();
+      if (status !== "SUCCESS") {
         return { ok: false, reason: "provider_error" };
       }
+      // Accepted by the gateway. `body.result` is the provider transaction ID.
+      return { ok: true, reference: body.result };
     }
 
+    // Fallback: no recognizable status field but HTTP was 2xx.
     return { ok: true };
   } catch (err) {
     if (err?.name === "AbortError") {
